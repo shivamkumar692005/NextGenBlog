@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { uploadToCloudinary } from "../utils/uploadToCloudnary";
+import axiosClient from "../clint";
 
 interface ErrorResponse {
   error?: string;
@@ -81,8 +82,8 @@ export default function CreateBlog() {
         }
       }
 
-      const response = await axios.post(
-        "http://localhost:8787/api/v1/blog/add-blog",
+      const response = await axiosClient.post(
+        "/blog/add-blog",
         {
           title,
           content,

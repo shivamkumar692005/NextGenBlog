@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { uploadToCloudinary } from "../utils/uploadToCloudnary";
+import axiosClient from "../clint";
 
 interface ErrorResponse {
   error?: string;
@@ -31,8 +32,8 @@ export default function UpdateBlog() {
           return;
         }
 
-        const response = await axios.get(
-          `http://localhost:8787/api/v1/blog/${id}`,
+        const response = await axiosClient.get(
+          `/blog/${id}`,
           {
             headers: {
               Authorization: `${authToken}`,
@@ -118,8 +119,8 @@ export default function UpdateBlog() {
         }
       }
 
-      const response = await axios.put(
-        "http://localhost:8787/api/v1/blog/edit-blog",
+      const response = await axiosClient.put(
+        "/blog/edit-blog",
         {
           title,
           content,

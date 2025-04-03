@@ -7,9 +7,9 @@
   //   "nodejs_compat"
   // ],
   "vars": {
-    "DATABASE_URL": "prisma://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiZmRmZDMwMWYtZjViYy00MWQ5LWJkNzYtNzY0ZWZjNjZhMjczIiwidGVuYW50X2lkIjoiMjcxNjllNGNiNWRiOWMwZmM0YjRhZjYyODRhZWQzODQ0Y2U4NWViM2U0NTUxMDQzMTgxYjllYzg5Njk3MTAxYSIsImludGVybmFsX3NlY3JldCI6IjQ4M2RmNDVjLWIxYjYtNDliNC1hZjdkLWM1YWY0ZWNlYjdiYyJ9.x0vp-TsTOctALGhdqiAxJJLyLpKxpX--DmMH-JUdS0Q",
-    "SECRET" : "Hanuman"
-  }
+    "DATABASE_URL": "",
+    "SECRET": "",
+  },
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",
@@ -36,4 +36,5 @@
   //   "enabled": true,
   //   "head_sampling_rate": 1
   // }
+
 }

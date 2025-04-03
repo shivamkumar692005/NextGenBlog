@@ -5,6 +5,7 @@ import { z } from "zod";
 import { ClipLoader } from "react-spinners";
 import axios from "axios";
 import toast from "react-hot-toast";
+import axiosClient from "../clint";
 
 type SignupFormData = z.infer<typeof signupInputSchema>;
 
@@ -35,8 +36,8 @@ export function SignupForm({ setIsLoggedIn }: { setIsLoggedIn: (isLoggedIn: bool
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:8787/api/v1/user/signup",
+      const response = await axiosClient.post(
+        "/user/signup",
         formData
       );
 

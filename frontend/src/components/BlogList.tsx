@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BlogCard } from "./BlogCard";
-import axios from "axios";
 import toast from "react-hot-toast";
+import axiosClient from "../clint";
 
 interface Blog {
   id: string;
@@ -27,7 +27,7 @@ export default function BlogList() {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const response = await axios.get("http://localhost:8787/api/v1/blog/bulk");
+        const response = await axiosClient.get("/blog/bulk");
         setBlogs(response.data.data || []);
       } catch (error) {
         console.error("Error fetching blogs:", error);

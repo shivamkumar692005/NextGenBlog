@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 import toast from "react-hot-toast";
+import axiosClient from "../clint";
 
 interface BlogData {
   id: string;
@@ -29,8 +29,8 @@ export default function BlogPost() {
     const fetchBlogData = async () => {
       try {
         const authToken = localStorage.getItem("token");
-        const response = await axios.get(
-          `http://localhost:8787/api/v1/blog/${id}`,
+        const response = await axiosClient.get(
+          `/blog/${id}`,
           {
             headers: authToken ? { Authorization: `${authToken}` } : {},
           }
