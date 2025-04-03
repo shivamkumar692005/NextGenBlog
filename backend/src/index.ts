@@ -4,12 +4,15 @@ import { blogRouter } from './routers/blogRouter'
 import { cors } from 'hono/cors'
 
 
+
 const app = new Hono<{
   Bindings: {
     DATABASE_URL: string
     SECRET: string
   }
 }>()
+
+
 
 
 app.use(cors({

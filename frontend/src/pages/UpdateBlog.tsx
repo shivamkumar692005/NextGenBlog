@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { uploadToCloudinary } from "../utils/uploadToCloudnary";
@@ -9,14 +9,55 @@ interface ErrorResponse {
   message?: string;
 }
 
-export default function CreateBlog() {
+export default function UpdateBlog() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
   const [tag, setTag] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    const fetchBlogData = async () => {
+      try {
+        const authToken = localStorage.getItem("token");
+        if (!authToken) {
+          toast.error("Authentication token is missing. Please log in.");
+          navigate("/login");
+          return;
+        }
+
+        const response = await axios.get(
+          `http://localhost:8787/api/v1/blog/${id}`,
+          {
+            headers: {
+              Authorization: `${authToken}`,
+            },
+          }
+        );
+
+        if (response.data) {
+          const blogData = response.data.blog;
+          setTitle(blogData.title);
+          setDescription(blogData.description);
+          setContent(blogData.content);
+          setTag(blogData.tag);
+          setCurrentImageUrl(blogData.imageUrl);
+        }
+      } catch (error) {
+        console.error("Error fetching blog:", error);
+        toast.error("Failed to load blog data");
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchBlogData();
+  }, [id, navigate]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -53,42 +94,39 @@ export default function CreateBlog() {
       toast.error("Tag must be less than 10 characters");
       return;
     }
-    if (!image) {
-      toast.error("Please upload an image");
-      return;
-    }
 
     try {
       setLoading(true);
       const authToken = localStorage.getItem("token");
 
       if (!authToken) {
-        toast.error("Please log in.");
+        toast.error("Authentication token is missing. Please log in.");
         return;
       }
 
-      let imageUrl = "";
+      let imageUrlToUse = currentImageUrl;
+      
       if (image) {
         try {
-          toast.loading("Uploading image...");
-          imageUrl = await uploadToCloudinary(image);
+          toast.loading("Uploading new image...");
+          imageUrlToUse = await uploadToCloudinary(image);
           toast.dismiss();
-        } catch (uploadError) {
-          toast.dismiss();
-          toast.error("Failed to upload image");
-          console.error("Image upload error:", uploadError);
+        } catch (error) {
+          toast.error("Failed to upload new image");
+          console.error("Image upload error:", error);
           return;
         }
       }
 
-      const response = await axios.post(
-        "http://localhost:8787/api/v1/blog/add-blog",
+      const response = await axios.put(
+        "http://localhost:8787/api/v1/blog/edit-blog",
         {
           title,
           content,
           description,
           tag,
-          imageUrl: imageUrl || "default-image-url", 
+          imageUrl: imageUrlToUse,
+          blogId: id,
         },
         {
           headers: {
@@ -99,31 +137,38 @@ export default function CreateBlog() {
       );
 
       if (response.status === 200) {
-        toast.success("Blog created successfully!");
-        navigate("/blog");
+        toast.success("Blog updated successfully!");
+        navigate(`/blog/${id}`);
       } else {
-        throw new Error(response.data.error || "Failed to create blog");
+        throw new Error(response.data.error || "Failed to update blog");
       }
     } catch (error) {
-      console.error("Error creating blog:", error);
+      console.error("Error updating blog:", error);
       if (axios.isAxiosError(error) && error.response?.data) {
         const errorData = error.response.data as ErrorResponse;
         toast.error(
-          errorData.error || errorData.message || "Error creating blog."
+          errorData.error || errorData.message || "Error updating blog."
         );
       } else {
-        toast.error("Error creating blog.");
+        toast.error("Error updating blog.");
       }
     } finally {
       setLoading(false);
     }
   };
 
+  if (fetching) {
+    return (
+      <div className="bg-black min-h-screen flex items-center justify-center text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
+      </div>
+    );
+  }
   return (
-    <div className="bg-black">
+    <div className="bg-black min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-black text-white rounded-lg shadow-md">
         <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Create New Story</h1>
+          <h1 className="text-3xl font-bold">Update Blog Post</h1>
           <button
             onClick={handleSubmit}
             disabled={loading}
@@ -151,7 +196,7 @@ export default function CreateBlog() {
                 ></path>
               </svg>
             )}
-            {loading ? "Publishing..." : "Publish"}
+            {loading ? "Updating..." : "Update Post"}
           </button>
         </div>
 
@@ -164,11 +209,11 @@ export default function CreateBlog() {
               onChange={handleImageChange}
               className="w-full text-white file:bg-gray-800 file:border-0 file:py-2 file:px-4 file:rounded-full file:text-white file:cursor-pointer file:hover:bg-gray-700"
             />
-            {image && (
+            {(image || currentImageUrl) && (
               <div className="mt-4">
                 <p className="text-gray-400">Image Preview:</p>
                 <img
-                  src={URL.createObjectURL(image)}
+                  src={image ? URL.createObjectURL(image) : currentImageUrl}
                   alt="Preview"
                   className="w-full h-64 object-cover rounded-lg border border-gray-700"
                 />

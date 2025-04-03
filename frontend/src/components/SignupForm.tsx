@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 
 type SignupFormData = z.infer<typeof signupInputSchema>;
 
-export function SignupForm() {
+export function SignupForm({ setIsLoggedIn }: { setIsLoggedIn: (isLoggedIn: boolean) => void }) {
   const [formData, setFormData] = useState<SignupFormData>({
     name: "",
     email: "",
@@ -44,6 +44,7 @@ export function SignupForm() {
         toast.success("Account created successfully");
         setFormData({ name: "", email: "", password: "" });
         localStorage.setItem("token", response.data.token);
+        setIsLoggedIn(true);
         // setTimeout(() => {
           navigate("/");
         // }, 1500); 

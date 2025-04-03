@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { Prisma, PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
-import {  sign } from 'hono/jwt'
+import { sign, verify } from 'hono/jwt'
 import bcrypt from 'bcryptjs';
 
 
@@ -15,7 +15,7 @@ export const userRouter = new Hono<{
 
 userRouter.post('/signup', async (c) => {
   const body = await c.req.json();
-  const { email, password, name }:{email:string,password:string,name:string|undefined }= body;
+  const { email, password, name }: { email: string, password: string, name: string | undefined } = body;
   try {
     const prisma = new PrismaClient({
       datasourceUrl: c.env.DATABASE_URL,
@@ -96,3 +96,52 @@ userRouter.post('/signin', async (c) => {
     return c.json({ error: "Error in Login User", err });
   }
 })
+
+
+
+userRouter.get('/me', async (c) => {
+  try {
+    const prisma = new PrismaClient({
+      datasourceUrl: c.env.DATABASE_URL,
+    }).$extends(withAccelerate());
+
+    const authHeader = c.req.header('Authorization');
+
+    if (!authHeader) {
+      return c.json({ error: "Unauthorized: No token provided" }, 401);
+    }
+
+    const token = authHeader;
+
+    if (!token) {
+      return c.json({ error: "Unauthorized: Invalid token format" }, 401);
+    }
+
+    let decoded: { id: string } | null = null;
+    try {
+      decoded = await verify(token, c.env.SECRET) as { id: string };
+    } catch (err) {
+      return c.json({ error: "Unauthorized: Invalid token" }, 401);
+    }
+
+    if (!decoded || !decoded.id) {
+      return c.json({ error: "Unauthorized: Invalid user data" }, 401);
+    }
+
+    const userId = decoded.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true }, 
+    });
+
+    if (!user) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    return c.json({ user }, 200);
+  } catch (err) {
+    console.error("Error fetching user details:", err);
+    return c.json({ error: "Error in getting User", details: (err instanceof Error ? err.message : "Unknown error") }, 500);
+  }
+});

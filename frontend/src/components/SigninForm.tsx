@@ -4,11 +4,11 @@ import { signinInputSchema } from "@shivamkumar692005/type-of-blog";
 import { z } from "zod";
 import { ClipLoader } from "react-spinners";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 type SigninFormData = z.infer<typeof signinInputSchema>;
 
-export function SigninForm() {
+export function SigninForm({setIsLoggedIn}: {setIsLoggedIn: (isLoggedIn: boolean) => void}) {
   const [formData, setFormData] = useState<SigninFormData>({
     email: "",
     password: "",
@@ -43,6 +43,7 @@ export function SigninForm() {
         toast.success("welcome back Signed in successfully");
         setFormData({ email: "", password: "" });
         localStorage.setItem("token", response.data.token);
+        setIsLoggedIn(true);
         // setTimeout(() => {
           navigate("/");
         // }, 1500); 

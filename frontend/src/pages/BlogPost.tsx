@@ -1,101 +1,133 @@
-import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { RingLoader } from "react-spinners";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import toast from "react-hot-toast";
 
-interface Author {
-  name: string;
-}
-
-interface Blog {
+interface BlogData {
   id: string;
   title: string;
   content: string;
-  author?: Author;
-  readingTime?: number;
-  publishedAt?: string;
+  description: string;
+  tag: string;
+  imageUrl: string;
+  published: boolean;
+  author: {
+    name: string;
+    email: string;
+  };
 }
 
-export function BlogPost() {
-  const { id } = useParams<{ id: string }>();
+export default function BlogPost() {
   const navigate = useNavigate();
-  const [blog, setBlog] = useState<Blog | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { id } = useParams();
+  const [blog, setBlog] = useState<BlogData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthor, setIsAuthor] = useState(false);
 
   useEffect(() => {
-    const fetchBlog = async () => {
-      const authToken = localStorage.getItem("token");
-      if (!authToken) {
-        navigate("/signin");
-        return;
-      }
-
+    const fetchBlogData = async () => {
       try {
-        const response = await fetch(`http://localhost:8787/api/v1/blog/${id}`, {
-          headers: {
-            Authorization: `${authToken}`,
-          },
-        });
+        const authToken = localStorage.getItem("token");
+        const response = await axios.get(
+          `http://localhost:8787/api/v1/blog/${id}`,
+          {
+            headers: authToken ? { Authorization: `${authToken}` } : {},
+          }
+        );
 
-        if (!response.ok) throw new Error("Failed to fetch blog");
-        const data = await response.json();
-        setBlog(data.blog);
+        if (response.data?.blog) {
+          setBlog(response.data.blog);
+        } else {
+          setError("Blog data not found");
+        }
+
+        if (response.data?.isUser) {
+          setIsAuthor(true);
+        } else {
+          setIsAuthor(false);
+        }
       } catch (err) {
-        setError((err as Error).message);
+        toast.error("Failed to load blog data");
+        console.error("Error fetching blog:", err);
+        setError("Failed to load blog data");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBlog();
-  }, [id, navigate]);
+    fetchBlogData();
+  }, [id]);
 
-  if (loading) return (
-    <div className="flex justify-center absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-      <RingLoader size={60} color="black" />
-    </div>
-  );
-
-  if (error || !blog) {
+  if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen text-gray-700">
-        <h2 className="text-2xl font-bold">Blog Not Found</h2>
-        <p className="text-gray-500">{error || "The blog you are looking for does not exist."}</p>
-        <Link
-          to="/"
-          className="mt-4 px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition"
-        >
-          Go Back Home
-        </Link>
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
       </div>
     );
   }
 
-  const authorName = blog.author?.name || "Unknown";
-  const authorInitial = authorName.charAt(0).toUpperCase();
-  const bgColor = "bg-blue-500"; 
+  if (error || !blog) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <h1 className="text-3xl font-bold">{error || "Blog Not Found"}</h1>
+      </div>
+    );
+  }
 
   return (
-    <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">{blog.title}</h1>
+    <div className="w-full bg-black text-white">
+      <div className="absolute top-20 right-2 md:right-30 p-4">
+        {isAuthor && (
+          <button
+            className="px-5 py-2 border border-gray-600 rounded-full hover:bg-gray-600 hover:text-white transition duration-300 ease-in-out cursor-pointer"
+            onClick={() => navigate(`/blog/edit/${blog.id}`)}
+          >
+            Update
+          </button>
+        )}
+      </div>
+      <div className="min-h-screen bg-black text-white px-6 py-8 max-w-2xl mx-auto pt-10 md:pt-16">
+        <h1 className="text-4xl font-bold">{blog.title}</h1>
 
-      <div className="flex items-center space-x-4 mb-8">
-        <div className={`h-12 w-12 flex items-center justify-center rounded-full text-white ${bgColor} text-xl font-bold`}>
-          {authorInitial}
-        </div>
-        <div>
-          <div className="font-medium text-gray-900">{authorName}</div>
-          <div className="text-sm text-gray-600">
-            {format(blog.publishedAt ? new Date(blog.publishedAt) : new Date(), "MMM d, yyyy")} ·{" "}
-            {blog.readingTime || 5} min read
+        <div className="flex items-center space-x-4 mt-4">
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+              blog.author.name
+            )}&background=random`}
+            alt="Author"
+            className="w-10 h-10 rounded-full"
+          />
+          <div>
+            <p className="font-semibold">{blog.author.name}</p>
+            <p className="text-gray-400 text-sm">{blog.author.email}</p>
           </div>
         </div>
-      </div>
 
-      <div className="prose prose-lg max-w-none mb-12">
-        <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+        <div className="mt-3">
+          <span className="inline-block bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm">
+            {blog.tag}
+          </span>
+        </div>
+
+        {blog.imageUrl && (
+          <img
+            src={blog.imageUrl}
+            alt="Blog"
+            className="w-full my-6 rounded-lg"
+          />
+        )}
+
+        <p className="text-gray-300 text-lg mb-6">{blog.description}</p>
+
+        <div className="prose prose-invert max-w-none">
+          {blog.content.split("\n").map((paragraph, index) => (
+            <p key={index} className="mb-4">
+              {paragraph}
+            </p>
+          ))}
+        </div>
       </div>
-    </article>
+    </div>
   );
 }
